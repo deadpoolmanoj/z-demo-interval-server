@@ -1,14 +1,75 @@
-import express, { Request, Response } from 'express';
+import express from "express";
+import { createServer } from "http";
+import { Server, Socket } from "socket.io";
+import cors from "cors";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const httpServer = createServer(app);
+
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"]
+}));
 
 app.use(express.json());
 
-app.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'Hello from TypeScript!' });
+const io = new Server(httpServer, {
+  cors: { origin: "*", methods: ["GET", "POST"] }
 });
 
-app.listen(PORT, () => {
+const rooms: Record<string, { countdown: number; interval: NodeJS.Timeout | null }> = {};
+
+app.post("/create-room", (req, res) => {
+  const roomId = `room_${Date.now()}`;
+  rooms[roomId] = { countdown: 30, interval: null };
+  res.json({ roomId });
+});
+
+io.on("connection", (socket: Socket) => {
+  console.log(`Client connected: ${socket.id}`);
+
+  socket.on("join-room", (roomId: string) => {
+    if (!rooms[roomId]) {
+      socket.emit("error", { message: "Room not found" });
+      return;
+    }
+
+    socket.join(roomId);
+    console.log(`${socket.id} joined ${roomId}`);
+
+    rooms[roomId].countdown = 30;
+
+    if (rooms[roomId].interval) {
+      clearInterval(rooms[roomId].interval!);
+    }
+
+    rooms[roomId].interval = setInterval(() => {
+      const room = rooms[roomId];
+
+      if (room.countdown <= 0) {
+        clearInterval(room.interval!);
+        room.interval = null;
+        io.to(roomId).emit("room-updated", { roomId, countdown: 0, status: "finished" });
+        delete rooms[roomId];
+        return;
+      }
+
+      io.to(roomId).emit("room-updated", {
+        roomId,
+        countdown: room.countdown,
+        status: "active",
+      });
+
+      room.countdown--;
+    }, 1000);
+  });
+
+  socket.on("disconnect", () => {
+    console.log(`Client disconnected: ${socket.id}`);
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+httpServer.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
 });
