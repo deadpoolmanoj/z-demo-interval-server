@@ -97,8 +97,6 @@ io.on("connection", (socket: Socket) => {
         io.to(roomId).emit('room-updated', room)
       }
 
-      
-
       io.to(roomId).emit('room-updated', room)
 
     }, 1000);
