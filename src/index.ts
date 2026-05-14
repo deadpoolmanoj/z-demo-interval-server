@@ -19,6 +19,10 @@ const io = new Server(httpServer, {
 
 const rooms: Record<string, { countdown: number; interval: NodeJS.Timeout | null }> = {};
 
+app.get("/manoj", (req, res) => {
+  res.json({ message: "hello manoj" });
+});
+
 app.post("/create-room", (req, res) => {
   console.log('reached-here');
   
