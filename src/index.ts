@@ -19,7 +19,7 @@ const io = new Server(httpServer, {
 
 const rooms: Record<string, { countdown: number; interval: NodeJS.Timeout | null }> = {};
 
-app.get("/manoj", (req, res) => {
+app.get("/", (req, res) => {
   res.json({ message: "hello manoj" });
 });
 
