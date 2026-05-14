@@ -20,6 +20,8 @@ const io = new Server(httpServer, {
 const rooms: Record<string, { countdown: number; interval: NodeJS.Timeout | null }> = {};
 
 app.post("/create-room", (req, res) => {
+  console.log('reached-here');
+  
   const roomId = `room_${Date.now()}`;
   rooms[roomId] = { countdown: 30, interval: null };
   res.json({ roomId });
